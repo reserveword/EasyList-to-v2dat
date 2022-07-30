@@ -1,134 +1,72 @@
-# Domain list community
+# EasyList-to-v2dat
 
-This project manages a list of domains, to be used as geosites for routing purpose in Project V.
-
-## Purpose of this project
-
-This project is not opinionated. In other words, it does NOT endorse, claim or imply that a domain should be blocked or proxied. It can be used to generate routing rules on demand.
-
-## Download links
-
-- **dlc.dat**：[https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat](https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat)
-- **dlc.dat.sha256sum**：[https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat.sha256sum](https://github.com/v2fly/domain-list-community/releases/latest/download/dlc.dat.sha256sum)
-
-## Usage example
-
-Each file in the `data` directory can be used as a rule in this format: `geosite:filename`.
-
-```json
-"routing": {
-  "domainStrategy": "IPIfNonMatch",
-  "rules": [
-    {
-      "type": "field",
-      "outboundTag": "Reject",
-      "domain": [
-        "geosite:category-ads-all",
-        "geosite:category-porn"
-      ]
-    },
-    {
-      "type": "field",
-      "outboundTag": "Direct",
-      "domain": [
-        "domain:icloud.com",
-        "domain:icloud-content.com",
-        "domain:cdn-apple.com",
-        "geosite:cn",
-        "geosite:private"
-      ]
-    },
-    {
-      "type": "field",
-      "outboundTag": "Proxy-1",
-      "domain": [
-        "geosite:category-anticensorship",
-        "geosite:category-media",
-        "geosite:category-vpnservices"
-      ]
-    },
-    {
-      "type": "field",
-      "outboundTag": "Proxy-2",
-      "domain": [
-        "geosite:category-dev"
-      ]
-    },
-    {
-      "type": "field",
-      "outboundTag": "Proxy-3",
-      "domain": [
-        "geosite:geolocation-!cn"
-      ]
-    }
-  ]
-}
-```
-
-## Generate `dlc.dat` manually
-
-- Install `golang` and `git`
-- Clone project code: `git clone https://github.com/v2fly/domain-list-community.git`
-- Navigate to project root directory: `cd domain-list-community`
-- Install project dependencies: `go mod download`
-- Generate `dlc.dat` (without `datapath` option means to use domain lists in `data` directory of current working directory):
-  - `go run ./`
-  - `go run ./ --datapath=/path/to/your/custom/data/directory`
-
-Run `go run ./ --help` for more usage information.
-
-## Structure of data
-
-All data are under `data` directory. Each file in the directory represents a sub-list of domains, named by the file name. File content is in the following format.
-
-```
-# comments
-include:another-file
-domain:google.com @attr1 @attr2
-keyword:google
-regexp:www\.google\.com$
-full:www.google.com
-```
-
-**Syntax:**
-
-> The following types of rules are **NOT** fully compatible with the ones that defined by user in V2Ray config file. Do **Not** copy and paste directly.
-
-* Comment begins with `#`. It may begin anywhere in the file. The content in the line after `#` is treated as comment and ignored in production.
-* Inclusion begins with `include:`, followed by the file name of an existing file in the same directory.
-* Subdomain begins with `domain:`, followed by a valid domain name. The prefix `domain:` may be omitted.
-* Keyword begins with `keyword:`, followed by a string.
-* Regular expression begins with `regexp:`, followed by a valid regular expression (per Golang's standard).
-* Full domain begins with `full:`, followed by a complete and valid domain name.
-* Domains (including `domain`, `keyword`, `regexp` and `full`) may have one or more attributes. Each attribute begins with `@` and followed by the name of the attribute.
+This project transforms EasyList-like rule files to .dat files used by v2ray.
 
 ## How it works
 
-The entire `data` directory will be built into an external `geosite` file for Project V. Each file in the directory represents a section in the generated file.
+Easylist has very complex rules, but we don't need to implement it all.
+Since v2ray can only read domain and ip, we only need to extract that
+and discard the rest (protocols, ports, html/css tags, etc.)
 
-To generate a section:
+This program works under this rule now:
 
-1. Remove all the comments in the file.
-2. Replace `include:` lines with the actual content of the file.
-3. Omit all empty lines.
-4. Generate each `domain:` line into a [sub-domain routing rule](https://github.com/v2fly/v2ray-core/blob/master/app/router/config.proto#L21).
-5. Generate each `keyword:` line into a [plain domain routing rule](https://github.com/v2fly/v2ray-core/blob/master/app/router/config.proto#L17).
-6. Generate each `regexp:` line into a [regex domain routing rule](https://github.com/v2fly/v2ray-core/blob/master/app/router/config.proto#L19).
-7. Generate each `full:` line into a [full domain routing rule](https://github.com/v2fly/v2ray-core/blob/master/app/router/config.proto#L23).
+`^ *(@@)? *(\|{0,2}) *(https?://)?(([a-zA-Z][-a-zA-Z0-9]*\.[-a-zA-Z0-9.]*)|(?:[0-9]{1,3}\.){3}[0-9]{1,3}|\[?(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\]?|\[?[0-9-fA-F:]*::[0-9-fA-F:]*\]?)(/)?|^ */(.*)/`
 
-## How to organize domains
+Now let me explain this.
 
-### File name
+1. `^ *(@@)? *(\|{0,2}) *` detects prefix: `@@`, `||`, `|`.
 
-Theoretically any string can be used as the name, as long as it is a valid file name. In practice, we prefer names for determinic group of domains, such as the owner (usually a company name) of the domains, e.g., "google", "netflix". Names with unclear scope are generally unrecommended, such as "evil", or "local".
+   In EasyList, `@@` means whitelist; `||` means suffix; `|` means prefix.
+2. `(https?://)?(([a-zA-Z][-a-zA-Z0-9]*\.[-a-zA-Z0-9.]*)|(?:[0-9]{1,3}\.){3}[0-9]{1,3}|\[?(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\]?|\[?[0-9-fA-F:]*::[0-9-fA-F:]*\]?)` detects a domain, an IPv4 address or an IPv6 address.
 
-### Attributes
+   1. `(https?://)?` detects HTTP or HTTPS scheme.
+   2. `[a-zA-Z][-a-zA-Z0-9]*\.[-a-zA-Z0-9.]*` detects a domain. It matches wild, only ensures the first character is letter, includes a dot(.), composed of letter, number, hyphen and dot.
+   3. `(?:[0-9]{1,3}\.){3}[0-9]{1,3}` detects an IPv4 address. Also very wild.
+   4. `\[?(?:[0-9a-fA-F]{1,4}:){7}[0-9a-fA-F]{1,4}\]?` detects an IPv6 address without "::".
+   5. `\[?[0-9-fA-F:]*::[0-9-fA-F:]*\]?`  detects an IPv6 address with "::". Very wild.
 
-Attribute is useful for sub-group of domains, especially for filtering purpose. For example, the list of `google` domains may contains its main domains, as well as domains that serve ads. The ads domains may be marked by attribute `@ads`, and can be used as `geosite:google@ads` in V2Ray routing.
+3. `(/)?` detects the end of host in a URL. It looks like this: `http://www.example.com/example?field=value`, and we need nothing other than `www.example.com`, so the match ends here.
+4. `^ */(.*)/` detects a regexp.
 
-## Contribution guideline
+Gathering all conditions above, we have 5 different kind of patterns:
 
-* Fork this repo, make modifications to your own repo, file a PR.
-* Please begin with small size PRs, say modification in a single file.
-* A PR must be reviewed and approved by another member.
-* After a few successful PRs, you may apply for manager access to this repository.
+1. suffix match (If `||` or `(/)?` applys)
+2. prefix match (If `|` or `(https?://)?` applys)
+3. full match (If 1. and 2. applys, or if result is an IP address)
+4. keyword match (If none above applys and it's not a regexp)
+5. regexp match (if `^ */(.*)/` applys)
+
+Note that v2ray only support 1. 3. 4. and 5., so 2. falls back to 4.
+
+## How to use its outputs
+
+### If ips and sites are output separately
+
+    - ext:ips.dat:match for matched ips
+    - ext:ips.dat:pass for whitelisted ips
+    - ext:sites.dat:match for matched domains
+    - ext:sites.dat:pass for whitelisted domains
+
+### If all are output altogether
+
+    - ext:output.dat:ip for matched ips
+    - ext:output.dat:!ip for whitelisted ips
+    - ext:output.dat:site for matched domains
+    - ext:output.dat:!site for whitelisted domains
+
+## Usage
+
+```
+Usage: easylist-to-v2dat [OPTIONS]
+Transforms EasyList-like rule files to .dat files used by v2ray.
+If any FILE is - or missing, use STDIN or STDOUT instead.
+  -i --input=FILE         transforms EasyList-like FILE
+  -o --output=FILE        output .dat file to FILE
+  -s --sites=FILE         output sites to FILE, instead of to -o
+  -p --ips=FILE           output ips to FILE, instead of to -o
+  -v --verbose            output extra logs to STDOUT (or STDERR if occupied)
+```
+
+# Credits
+
+This program is based on [v2fly/domain-list-community](https://github.com/v2fly/domain-list-community) and [v2fly/geoip](https://github.com/v2fly/geoip)

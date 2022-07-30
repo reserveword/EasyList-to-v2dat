@@ -1,4 +1,4 @@
-module github.com/v2fly/domain-list-community
+module github.com/v2fly/easylist-to-v2dat
 
 go 1.18
 
