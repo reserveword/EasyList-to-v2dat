@@ -25,6 +25,7 @@ jobs:
       - name: Build sites.dat / ips.dat file
         run: |
           cd code || exit 1
+          go mod tidy
           curl https://github.com/gfwlist/gfwlist/raw/master/gfwlist.txt | base64 --decode | go run ./ -p ../ips.dat > ../sites.dat
           cd ../ && rm -rf code
           ls -lah
