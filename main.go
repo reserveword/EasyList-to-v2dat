@@ -140,7 +140,8 @@ func main() {
 	} else if *ips == "-" {
 		ipfile = os.Stdout
 	} else {
-		ipfile, err := os.OpenFile(*ips, os.O_RDWR|os.O_CREATE, 0644)
+		var err error
+		ipfile, err = os.OpenFile(*ips, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -158,7 +159,8 @@ func main() {
 			sitefile = os.Stdout
 		}
 	} else {
-		sitefile, err := os.OpenFile(*sites, os.O_RDWR|os.O_CREATE, 0644)
+		var err error
+		sitefile, err = os.OpenFile(*sites, os.O_RDWR|os.O_CREATE, 0644)
 		if err != nil {
 			fmt.Fprintln(os.Stderr, err)
 			os.Exit(1)
@@ -230,6 +232,8 @@ func main() {
 				os.Exit(1)
 			}
 			ipsList.Entry = append(ipsList.Entry, ip)
+		} else {
+			fmt.Fprintf(os.Stderr, "i=%v, ipfile=%v\n", i, ipfile)
 		}
 	}
 	sort.SliceStable(protoList.Entry, func(i, j int) bool {
