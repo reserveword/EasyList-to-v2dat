@@ -205,7 +205,6 @@ func main() {
 			pattern = REGEXPMATCH // once regexp, always regexp
 			tag |= SITEMATCH      // regexp only works on site
 			regexWithoutHttps := httpsRegex.ReplaceAllString(string(match[7]), "$1")
-			fmt.Fprintln(os.Stderr, regexWithoutHttps)
 			_, err := regexp.Compile(regexWithoutHttps)
 			if err != nil {
 				fmt.Fprintf(os.Stderr, "%v, from url regexp `%s`\n", err, string(match[7]))
@@ -232,8 +231,6 @@ func main() {
 				os.Exit(1)
 			}
 			ipsList.Entry = append(ipsList.Entry, ip)
-		} else {
-			fmt.Fprintf(os.Stderr, "i=%v, ipfile=%v\n", i, ipfile)
 		}
 	}
 	sort.SliceStable(protoList.Entry, func(i, j int) bool {
