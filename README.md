@@ -39,20 +39,20 @@ Gathering all conditions above, we have 5 different kind of patterns:
 Note that v2ray only support 1. 3. 4. and 5., so 2. falls back to 4.
 
 ## How to use its outputs
-
-### If ips and sites are output separately
+<!-- 
+### If ips and sites are output separately -->
 
     - ext:ips.dat:match for matched ips
     - ext:ips.dat:pass for whitelisted ips
     - ext:sites.dat:match for matched domains
     - ext:sites.dat:pass for whitelisted domains
-
+<!-- 
 ### If all are output altogether
 
     - ext:output.dat:ip for matched ips
     - ext:output.dat:!ip for whitelisted ips
     - ext:output.dat:site for matched domains
-    - ext:output.dat:!site for whitelisted domains
+    - ext:output.dat:!site for whitelisted domains -->
 
 ## Usage
 

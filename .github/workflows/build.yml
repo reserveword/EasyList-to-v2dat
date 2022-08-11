@@ -1,10 +1,5 @@
-name: Build dlc.dat
-on:
-  push:
-    branches:
-      - master
-    paths-ignore:
-      - "**/README.md"
+name: Build gfwlist dats
+on: workflow_dispatch
 jobs:
   build:
     name: Build
@@ -27,25 +22,32 @@ jobs:
         with:
           path: code
 
-      - name: Build dlc.dat file
+      - name: Build sites.dat / ips.dat file
         run: |
           cd code || exit 1
-          go run ./ --outputdir=../ --exportlists=category-ads-all,tld-cn,cn,tld-\!cn,geolocation-\!cn,apple,icloud
+          curl https://github.com/gfwlist/gfwlist/raw/master/gfwlist.txt | base64 --decode | go run ./ -p ../ips.dat > ../sites.dat
           cd ../ && rm -rf code
 
-      - name: Generate dlc.dat sha256 hash
+      - name: Generate dat sha256 hash
         run: |
-          sha256sum dlc.dat > dlc.dat.sha256sum
+          sha256sum sites.dat > sites.dat.sha256sum
+          sha256sum ips.dat > ips.dat.sha256sum
 
       - name: Generate Zip
         run: |
-          zip -9 dlc.dat.zip dlc.dat
-          sha256sum dlc.dat.zip > dlc.dat.zip.sha256sum
+          zip -9 gfwlist-dats.zip sites.dat ips.dat
+          sha256sum gfwlist-dats.zip > gfwlist-dats.zip.sha256sum
+          zip -9 sites.dat.zip sites.dat
+          sha256sum sites.dat.zip > sites.dat.zip.sha256sum
+          zip -9 ips.dat.zip ips.dat
+          sha256sum ips.dat.zip > ips.dat.zip.sha256sum
 
       - name: Generate XZ
         run: |
-          xz -z -9 -k dlc.dat
-          sha256sum dlc.dat.xz > dlc.dat.xz.sha256sum
+          xz -z -9 -k sites.dat
+          sha256sum sites.dat.xz > sites.dat.xz.sha256sum
+          xz -z -9 -k ips.dat
+          sha256sum ips.dat.xz > ips.dat.xz.sha256sum
 
       - name: Git push assets to "release" branch
         run: |
@@ -53,7 +55,7 @@ jobs:
           git config --local user.name "github-actions[bot]"
           git config --local user.email "41898282+github-actions[bot]@users.noreply.github.com"
           git checkout -b release
-          git add *.txt *.sha256sum dlc.dat dlc.dat.zip dlc.dat.xz
+          git add *.sha256sum *.dat *.zip *.xz
           git commit -m "${{ env.RELEASE_NAME }}"
           git remote add origin "https://${{ github.actor }}:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}"
           git push -f -u origin release
@@ -69,62 +71,142 @@ jobs:
           draft: false
           prerelease: false
 
-      - name: Upload dlc.dat
+      - name: Upload gfwlist-dats.zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat
-          asset_name: dlc.dat
+          asset_path: ./gfwlist-dats.zip
+          asset_name: gfwlist-dats.zip
           asset_content_type: application/octet-stream
 
-      - name: Upload dlc.dat sha256sum
+      - name: Upload gfwlist-dats.zip sha256sum
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat.sha256sum
-          asset_name: dlc.dat.sha256sum
+          asset_path: ./gfwlist-dats.zip.sha256sum
+          asset_name: gfwlist-dats.zip.sha256sum
           asset_content_type: text/plain
 
-      - name: Upload dlc.dat.zip
+      - name: Upload sites.dat
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat.zip
-          asset_name: dlc.dat.zip
+          asset_path: ./sites.dat
+          asset_name: sites.dat
           asset_content_type: application/octet-stream
 
-      - name: Upload dlc.dat.zip sha256sum
+      - name: Upload sites.dat sha256sum
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat.zip.sha256sum
-          asset_name: dlc.dat.zip.sha256sum
+          asset_path: ./sites.dat.sha256sum
+          asset_name: sites.dat.sha256sum
           asset_content_type: text/plain
 
-      - name: Upload dlc.dat.xz
+      - name: Upload sites.dat.zip
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat.xz
-          asset_name: dlc.dat.xz
+          asset_path: ./sites.dat.zip
+          asset_name: sites.dat.zip
           asset_content_type: application/octet-stream
 
-      - name: Upload dlc.dat.xz sha256sum
+      - name: Upload sites.dat.zip sha256sum
         uses: actions/upload-release-asset@v1
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           upload_url: ${{ steps.create_release.outputs.upload_url }}
-          asset_path: ./dlc.dat.xz.sha256sum
-          asset_name: dlc.dat.xz.sha256sum
+          asset_path: ./sites.dat.zip.sha256sum
+          asset_name: sites.dat.zip.sha256sum
+          asset_content_type: text/plain
+
+      - name: Upload sites.dat.xz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sites.dat.xz
+          asset_name: sites.dat.xz
+          asset_content_type: application/octet-stream
+
+      - name: Upload sites.dat.xz sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./sites.dat.xz.sha256sum
+          asset_name: sites.dat.xz.sha256sum
+          asset_content_type: text/plain
+
+      - name: Upload ips.dat
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat
+          asset_name: ips.dat
+          asset_content_type: application/octet-stream
+
+      - name: Upload ips.dat sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat.sha256sum
+          asset_name: ips.dat.sha256sum
+          asset_content_type: text/plain
+
+      - name: Upload ips.dat.zip
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat.zip
+          asset_name: ips.dat.zip
+          asset_content_type: application/octet-stream
+
+      - name: Upload ips.dat.zip sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat.zip.sha256sum
+          asset_name: ips.dat.zip.sha256sum
+          asset_content_type: text/plain
+
+      - name: Upload ips.dat.xz
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat.xz
+          asset_name: ips.dat.xz
+          asset_content_type: application/octet-stream
+
+      - name: Upload ips.dat.xz sha256sum
+        uses: actions/upload-release-asset@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          upload_url: ${{ steps.create_release.outputs.upload_url }}
+          asset_path: ./ips.dat.xz.sha256sum
+          asset_name: ips.dat.xz.sha256sum
           asset_content_type: text/plain
